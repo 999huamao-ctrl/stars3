@@ -1,43 +1,29 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams, useSearchParams } from "next/navigation"
+import { useParams } from "next/navigation"
+import { getLinkBySlug, incrementClicks } from "@/lib/data"
 
 export default function LandingPage() {
   const params = useParams()
-  const searchParams = useSearchParams()
   const slug = params.slug as string
   const [countdown, setCountdown] = useState(3)
   const [targetUrl, setTargetUrl] = useState("")
 
   useEffect(() => {
-    // TODO: Fetch real target URL from API
-    setTargetUrl("https://example.com/offer")
+    const link = getLinkBySlug(slug)
+    if (link) {
+      setTargetUrl(link.targetUrl)
+      incrementClicks(slug)
+    }
 
-    // Track visit
-    fetch("/api/track", {
-      method: "POST",
-      body: JSON.stringify({
-        slug,
-        type: "view",
-        referrer: document.referrer,
-        source: searchParams.get("source"),
-        medium: searchParams.get("medium"),
-      }),
-    })
-
-    // Countdown and redirect
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer)
-          // Track click before redirect
-          fetch("/api/track", {
-            method: "POST",
-            body: JSON.stringify({ slug, type: "click" }),
-          }).then(() => {
-            window.location.href = targetUrl || "https://example.com"
-          })
+          if (targetUrl) {
+            window.location.href = targetUrl
+          }
           return 0
         }
         return prev - 1
@@ -45,7 +31,7 @@ export default function LandingPage() {
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [slug, searchParams, targetUrl])
+  }, [slug, targetUrl])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 via-blue-600 to-cyan-500">
@@ -61,12 +47,14 @@ export default function LandingPage() {
           <p className="font-medium truncate">{targetUrl || "加载中..."}</p>
         </div>
 
-        <button
-          onClick={() => window.location.href = targetUrl || "https://example.com"}
-          className="mt-6 px-6 py-2 bg-white text-purple-600 rounded-full font-medium hover:bg-opacity-90 transition"
-        >
-          立即跳转
-        </button>
+        {targetUrl && (
+          <button
+            onClick={() => window.location.href = targetUrl}
+            className="mt-6 px-6 py-2 bg-white text-purple-600 rounded-full font-medium hover:bg-opacity-90 transition"
+          >
+            立即跳转
+          </button>
+        )}
       </div>
     </div>
   )

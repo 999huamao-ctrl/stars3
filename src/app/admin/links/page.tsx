@@ -1,44 +1,26 @@
 "use client"
 
-import { useState } from "react"
-import { Plus, Copy, ExternalLink, BarChart3, Trash2, Edit } from "lucide-react"
-
-interface Link {
-  id: string
-  slug: string
-  name: string
-  targetUrl: string
-  clicks: number
-  conversions: number
-  status: "active" | "paused"
-}
+import { useState, useEffect } from "react"
+import { Plus, Copy, BarChart3, Trash2, Edit } from "lucide-react"
+import { getLinks, addLink, Link } from "@/lib/data"
 
 export default function LinksPage() {
-  const [links, setLinks] = useState<Link[]>([
-    {
-      id: "1",
-      slug: "abc123",
-      name: "测试链接1",
-      targetUrl: "https://example.com/offer1",
-      clicks: 15420,
-      conversions: 423,
-      status: "active",
-    },
-  ])
+  const [links, setLinks] = useState<Link[]>([])
   const [showModal, setShowModal] = useState(false)
   const [newLink, setNewLink] = useState({ name: "", targetUrl: "", slug: "" })
 
+  useEffect(() => {
+    setLinks(getLinks())
+  }, [])
+
   const handleCreate = () => {
-    const link: Link = {
-      id: Math.random().toString(36).substr(2, 9),
-      slug: newLink.slug || Math.random().toString(36).substr(2, 6),
+    const link = addLink({
       name: newLink.name,
       targetUrl: newLink.targetUrl,
-      clicks: 0,
-      conversions: 0,
+      slug: newLink.slug || Math.random().toString(36).substr(2, 6),
       status: "active",
-    }
-    setLinks([...links, link])
+    })
+    setLinks(getLinks())
     setShowModal(false)
     setNewLink({ name: "", targetUrl: "", slug: "" })
   }
@@ -46,6 +28,11 @@ export default function LinksPage() {
   const copyLink = (slug: string) => {
     navigator.clipboard.writeText(`${window.location.origin}/${slug}`)
     alert("链接已复制")
+  }
+
+  const formatNumber = (num: number) => {
+    if (num >= 1000) return (num / 1000).toFixed(1) + "K"
+    return num.toString()
   }
 
   return (
@@ -85,7 +72,7 @@ export default function LinksPage() {
                   </div>
                 </td>
                 <td className="px-6 py-4 text-sm">
-                  {link.clicks.toLocaleString()} / {link.conversions.toLocaleString()}
+                  {formatNumber(link.clicks)} / {formatNumber(link.conversions)}
                 </td>
                 <td className="px-6 py-4">
                   <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
